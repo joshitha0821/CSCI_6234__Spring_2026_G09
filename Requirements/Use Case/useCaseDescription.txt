@@ -1,0 +1,123 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 12
+
+' =========================
+' Actors
+' =========================
+actor "Business User\n(Primary)" as User
+actor "System Admin\n(Secondary)" as Admin
+actor "Business Database\n(Secondary)" as DB
+actor "LLM Provider\n(Secondary)" as LLM
+
+note right of User
+The Business User is a non-technical stakeholder (e.g., manager, owner, operations lead) who needs fast insights from business data
+without writing SQL or using complex BI tools. They ask questions in natural language, review the system’s outputs (SQL, charts, and
+summaries), and can provide feedback to improve answer quality and trust over time.
+end note
+
+note right of Admin
+The System Admin is responsible for configuring the platform so it can operate safely and reliably within an organization. This includes
+setting up database connections, managing cache and data refresh policies, monitoring audit logs, and ensuring access controls and
+security policies are followed.
+end note
+
+note right of DB
+The Business Database represents the organization’s operational data source (e.g., PostgreSQL, MySQL, SQL Server). It stores business
+tables such as sales, customers, inventory, and finance. The system queries this database using validated SQL to produce datasets that
+feed charts and summaries.
+end note
+
+note right of LLM
+The LLM Provider is an external AI service used to generate SQL (and sometimes summaries) when the platform cannot answer from cache
+or semantic similarity. It is treated as a secondary actor because it is outside the system boundary and must be invoked through an API
+under strict prompting, validation, and safety constraints.
+end note
+
+' =========================
+' System Scope (square)
+' =========================
+rectangle "GenAI Conversational BI Assistant" as System {
+
+  usecase "UC1: Ask BI Question\nin Natural Language" as UC1
+  usecase "UC2: Retrieve Answer\nfrom Cache" as UC2
+  usecase "UC3: Semantic Match\nvia Vector Search" as UC3
+  usecase "UC4: Generate SQL\nvia GenAI" as UC4
+  usecase "UC5: Execute SQL\nand Fetch Data" as UC5
+  usecase "UC6: Visualize & Summarize\n(Charts + Narrative)" as UC6
+  usecase "UC7: Provide Feedback\n(Approve/Disapprove)" as UC7
+
+}
+
+' =========================
+' Associations
+' =========================
+User --> UC1
+User --> UC7
+
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+
+UC5 --> DB
+UC4 --> LLM
+
+' =========================
+' Include / Extend
+' =========================
+UC1 .> UC2 : <<include>>
+UC1 .> UC3 : <<include>>
+UC1 .> UC4 : <<extend>>
+UC1 .> UC5 : <<include>>
+UC1 .> UC6 : <<include>>
+UC7 .> UC1 : <<extend>>
+
+' =========================
+' Notes: 1 paragraph per Use Case
+' =========================
+note right of UC1
+This use case begins when a Business User asks a business question in natural language (e.g., “What were last month’s sales by region?”).
+The system normalizes the question and orchestrates the end-to-end workflow: attempting cache retrieval, semantic matching, and if needed,
+GenAI-based SQL generation, followed by execution and presentation. The primary outcome is an actionable response containing the SQL,
+a chart or table, and a concise narrative summary.
+end note
+
+note right of UC2
+The system checks whether an identical or previously-approved question exists in the cache using a direct key lookup (O(1)). If a match is
+found, the system returns the stored SQL, chart, and summary immediately, reducing latency and cost while increasing consistency. This use
+case also updates cache hit statistics and can support expiration policies to prevent stale answers from persisting.
+end note
+
+note right of UC3
+If no direct cache hit is found, the system performs semantic matching using embeddings and a vector database to detect paraphrases or
+equivalent intent. When a similarity threshold is met, the system retrieves the closest previously answered question and returns its validated
+answer artifacts. This improves usability when users ask the same question with different wording.
+end note
+
+note right of UC4
+When neither direct cache nor semantic match resolves the question, the system calls an external LLM provider to translate the user’s intent
+into a SQL query. The prompt includes schema context and constraints (e.g., read-only access, allowed tables, row limits) to minimize unsafe
+or irrelevant SQL. The output of this use case is a candidate SQL statement that must be validated before execution.
+end note
+
+note right of UC5
+The system executes validated SQL against the connected business database to produce a dataset. Execution must enforce security and
+governance controls such as read-only permissions, query timeouts, row limits, and table access policies. The dataset becomes the input for
+visualization and summarization, and execution metadata (latency, errors) is captured for auditing.
+end note
+
+note right of UC6
+Using the retrieved dataset, the system produces a user-friendly response: a chart or table plus a concise written insight summary describing
+key patterns, changes, or outliers. The goal is to make results understandable to non-technical stakeholders, while also showing the generated
+SQL for transparency. The output is formatted for the chat interface and can be reused for caching.
+end note
+
+note right of UC7
+After reviewing the response, the Business User can approve or disapprove the answer. Approval can increase trust signals and prioritize the
+answer for reuse, while disapproval can mark it as low-confidence, trigger cache invalidation, or prompt refinement workflows. Feedback is stored
+for quality tracking, future tuning, and governance purposes.
+end note
+
+@enduml
