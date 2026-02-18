@@ -1,0 +1,77 @@
+@startuml
+top to bottom direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam linetype ortho
+skinparam dpi 200
+skinparam ranksep 70
+skinparam nodesep 55
+
+' =========================
+' Actors
+' =========================
+actor "Business User\n(Primary)" as User
+actor "System Admin\n(Secondary)" as Admin
+actor "Business Database\n(Secondary)" as DB
+actor "LLM Provider\n(Secondary)" as LLM
+
+' =========================
+' System Scope
+' =========================
+rectangle "GenAI Conversational BI Assistant" as System {
+
+  usecase "UC1: Ask BI Question\nin Natural Language" as UC1
+  usecase "UC2: Add Training Data\nto Database" as UC2
+  usecase "UC3: Semantic Match\nvia Vector Search" as UC3
+  usecase "UC4: Generate SQL\nvia GenAI" as UC4
+  usecase "UC5: Execute SQL\nand Fetch Data" as UC5
+  usecase "UC6: Visualize & Summarize\n(Charts + Narrative)" as UC6
+  usecase "UC7: Provide Feedback\n(Approve/Disapprove)" as UC7
+
+  ' --- Force one vertical column order ---
+  UC1 -down[hidden]-> UC3
+  UC3 -down[hidden]-> UC4
+  UC4 -down[hidden]-> UC5
+  UC5 -down[hidden]-> UC6
+  UC6 -down[hidden]-> UC7
+  UC7 -down[hidden]-> UC2
+
+  ' --- Include / Extend (non-overlapping layout) ---
+  UC1 ..> UC3 : <<include>>
+  UC1 ..> UC5 : <<include>>
+  UC5 ..> UC6 : <<include>>
+
+  UC4 ..> UC1 : <<extend>>
+  UC7 ..> UC1 : <<extend>>
+  UC2 ..> UC7 : <<extend>>
+}
+
+' =========================
+' Actor placement anchors
+' (FORCE User/Admin LEFT, DB/LLM RIGHT)
+' =========================
+User  -down[hidden]-> Admin
+DB    -down[hidden]-> LLM
+
+User  -left[hidden]-> UC1
+Admin -left[hidden]-> UC2
+
+DB    -right[hidden]-> UC5
+LLM   -right[hidden]-> UC4
+
+' =========================
+' Associations
+' =========================
+User --> UC1
+User --> UC7
+
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+
+UC5 --> DB
+UC2 --> DB
+UC4 --> LLM
+
+@enduml
