@@ -1,0 +1,244 @@
+@startuml
+' =========================================================
+' FULL DOMAIN MODEL (fits in one image + straight orthogonal lines)
+' =========================================================
+
+' --- Force the whole diagram to fit inside a single “full” image ---
+' (Valid PlantUML syntax: scale max W*H)
+scale max 1600*1200
+
+left to right direction
+
+skinparam dpi 220
+skinparam defaultFontSize 16
+skinparam linetype ortho
+skinparam ArrowThickness 2
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam nodesep 55
+skinparam ranksep 65
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam minClassWidth 170
+
+' =========================
+' PACKAGES / CLASSES
+' =========================
+package "Identity" as P_ID {
+  class User {
+    userId : UUID
+    name : String
+    email : String
+    role : RoleType
+  }
+
+  enum RoleType {
+    BUSINESS_USER
+    ADMIN
+  }
+
+  User -[hidden]down- RoleType
+  User ..> RoleType
+}
+
+package "Conversation" as P_CONV {
+  class ChatSession {
+    sessionId : UUID
+    startedAt : DateTime
+    status : SessionStatus
+  }
+
+  enum SessionStatus {
+    ACTIVE
+    CLOSED
+  }
+
+  class Question {
+    questionId : UUID
+    rawText : String
+    normalizedText : String
+    hashKey : String
+    askedAt : DateTime
+  }
+
+  class Answer {
+    answerId : UUID
+    createdAt : DateTime
+    fromCache : Boolean
+    confidenceScore : float
+  }
+
+  ChatSession -[hidden]down- Question
+  Question -[hidden]down- Answer
+  ChatSession -[hidden]right- SessionStatus
+  ChatSession ..> SessionStatus
+}
+
+package "Query & Results" as P_QR {
+  class SQLQuery {
+    sqlId : UUID
+    sqlText : String
+    isValidated : Boolean
+  }
+
+  class DataSet {
+    datasetId : UUID
+    rowCount : int
+    generatedAt : DateTime
+  }
+
+  class Chart {
+    chartId : UUID
+    chartType : String
+  }
+
+  class Summary {
+    summaryId : UUID
+    text : String
+  }
+
+  SQLQuery -[hidden]down- DataSet
+  DataSet  -[hidden]down- Chart
+  Chart    -[hidden]down- Summary
+}
+
+package "Data Source" as P_DS {
+  class DataSource {
+    sourceId : UUID
+    name : String
+    dbType : String
+  }
+
+  class DBConnection {
+    connectionId : UUID
+    host : String
+    databaseName : String
+  }
+
+  class DBSchema {
+    schemaId : UUID
+    schemaName : String
+  }
+
+  class Table {
+    tableName : String
+    primaryKey : String
+  }
+
+  class Column {
+    columnName : String
+    dataType : String
+  }
+
+  DataSource   -[hidden]down- DBConnection
+  DBConnection -[hidden]down- DBSchema
+  DBSchema     -[hidden]down- Table
+  Table        -[hidden]down- Column
+}
+
+package "Reuse & Governance" as P_GOV {
+  class CacheEntry {
+    cacheKey : String
+    createdAt : DateTime
+    expiresAt : DateTime
+    hitCount : int
+  }
+
+  class VectorEmbedding {
+    embeddingId : UUID
+    modelName : String
+    vectorRef : String
+  }
+
+  class TrainingDocument {
+    documentId : UUID
+    fileName : String
+    docType : String
+    uploadedAt : DateTime
+  }
+
+  class Feedback {
+    feedbackId : UUID
+    vote : Vote
+    comment : String
+    createdAt : DateTime
+  }
+
+  enum Vote {
+    APPROVE
+    DISAPPROVE
+  }
+
+  class AuditEvent {
+    eventId : UUID
+    action : String
+    status : String
+    latencyMs : long
+    timestamp : DateTime
+  }
+
+  CacheEntry      -[hidden]down- VectorEmbedding
+  VectorEmbedding -[hidden]down- TrainingDocument
+  TrainingDocument-[hidden]down- Feedback
+  Feedback        -[hidden]down- Vote
+  Vote            -[hidden]down- AuditEvent
+}
+
+' =========================
+' LAYOUT PINNING (REAL CLASSES ONLY)
+' Keep diagram compact + reduce long crossing lines
+' =========================
+User       -[hidden]right- ChatSession
+ChatSession-[hidden]right- DataSource
+ChatSession-[hidden]down-  SQLQuery
+Question   -[hidden]down-  CacheEntry
+
+' Also keep Query&Results near Conversation (short vertical links)
+Answer -[hidden]down- SQLQuery
+
+' =========================
+' RELATIONSHIPS (COMPLETE + MULTIPLICITIES)
+' Use explicit directions to keep lines straight
+' =========================
+
+' Identity ↔ Conversation
+User "1" -right- "0..*" ChatSession
+
+' Conversation internal
+ChatSession "1" -down-* "1..*" Question
+ChatSession "1" -down-* "0..*" Answer
+
+' Question/Answer → Data Source (horizontal, straight)
+Question "0..*" -right-> "1" DataSource
+Answer   "0..*" -right-> "1" DataSource
+
+' Data Source structure (vertical, straight)
+DataSource "1" -down-* "1" DBConnection
+DataSource "1" -down-* "1" DBSchema
+DBSchema  "1" -down-* "1..*" Table
+Table     "1" -down-* "1..*" Column
+
+' Answer → Results (VERTICAL to avoid 4 parallel horizontal lines)
+Answer "1"    -down-* "1"   SQLQuery
+Answer "0..1" -down-* "1"   DataSet
+Answer "0..1" -down-* "1"   Chart
+Answer "0..1" -down-* "1"   Summary
+
+' Reuse: cache + embedding (vertical under Question)
+Question "0..1" -down-> CacheEntry
+Question "0..1" -down-> VectorEmbedding
+CacheEntry "1"  -down-* Answer
+VectorEmbedding "0..*" -right-> "1" DataSource
+
+' Governance: training documents, feedback, audit
+User "1" -down- "0..*" TrainingDocument
+TrainingDocument "0..*" -right-> "1" DataSource
+
+User "1" -down- "0..*" Feedback
+Feedback "0..*" -right-> "1" Answer
+Feedback ..> Vote
+
+ChatSession "1" -down-o "0..*" AuditEvent
+AuditEvent "0..*" -right-> "1" User
+
+@enduml
