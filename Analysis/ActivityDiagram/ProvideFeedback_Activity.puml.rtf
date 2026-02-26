@@ -1,0 +1,48 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2821
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 @startuml\
+title UC7 Activity - Provide Feedback (Approve/Disapprove)\
+top to bottom direction\
+skinparam dpi 220\
+skinparam linetype ortho\
+skinparam shadowing false\
+skinparam roundcorner 12\
+\
+' =========================================================\
+' TEXT DESCRIPTION (Numbered Steps)\
+' Step 1: User reviews the generated answer.\
+' Step 2: User selects a vote option (Approve or Disapprove).\
+' Step 3: User submits the feedback.\
+' Step 4: System evaluates the selected vote.\
+' Step 5: If approved, system increases trust score and keeps answer in cache.\
+' Step 6: If disapproved, system marks answer as low-confidence and may invalidate cache.\
+' Step 7: System flags the answer for admin review to improve training.\
+' Step 8: System stores the feedback record in the database.\
+' Step 9: System writes an audit log entry for tracking.\
+' =========================================================\
+\
+(*) --> "1. User reviews answer"\
+--> "2. Select vote\\n(Approve / Disapprove)"\
+--> "3. Submit feedback"\
+\
+if "4. Approve?" then\
+  -->[Yes] "5. Increase trust score\\nfor answer"\
+  --> "5. Keep in cache /\\nprioritize reuse"\
+  --> "8. Store feedback record"\
+  --> "9. Audit log feedback"\
+  --> (*)\
+else\
+  -->[No] "6. Mark as low-confidence"\
+  --> "6. Optionally invalidate cache"\
+  --> "7. Flag for admin review\\n(training improvement)"\
+  --> "8. Store feedback record"\
+  --> "9. Audit log feedback"\
+  --> (*)\
+endif\
+\
+@enduml}

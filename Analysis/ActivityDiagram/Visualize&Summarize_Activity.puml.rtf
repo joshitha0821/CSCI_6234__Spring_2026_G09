@@ -1,0 +1,34 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2821
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 @startuml\
+title UC6 Activity - Visualize & Summarize (Charts + Narrative)\
+top to bottom direction\
+skinparam dpi 220\
+skinparam linetype ortho\
+skinparam shadowing false\
+skinparam roundcorner 12\
+\
+' =========================================================\
+' TEXT DESCRIPTION (Numbered Steps)\
+' Step 1: System receives the dataset from the SQL execution module.\
+' Step 2: System decides the output format (table or chart) based on data type and user request.\
+' Step 3: System builds the chart specification (axes, labels, aggregation).\
+' Step 4: System generates a narrative summary including key values, trends, and outliers.\
+' Step 5: System packages the response with SQL, chart/table, and summary.\
+' Step 6: System returns the final response to the Web UI.\
+' =========================================================\
+\
+(*) --> "1. Receive dataset"\
+--> "2. Decide output format\\n(table vs chart)"\
+--> "3. Build chart specification"\
+--> "4. Generate narrative summary\\n(key values, trend, outliers)"\
+--> "5. Package response\\n(SQL + chart/table + summary)"\
+--> "6. Return response to Web UI"\
+--> (*)\
+\
+@enduml}
