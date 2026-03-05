@@ -1,0 +1,442 @@
+@startuml
+' =========================
+' FULL EXPORT - PREVENT PNG CROPPING (LIMIT_SIZE SAFE)
+' =========================
+
+' IMPORTANT: Use a FIXED scale factor (this reduces pixel size under server limit)
+scale 0.55
+
+top to bottom direction
+skinparam dpi 90
+skinparam defaultFontSize 10
+skinparam linetype ortho
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam nodesep 25
+skinparam ranksep 30
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam ArrowThickness 1
+skinparam minClassWidth 120
+skinparam maxMessageSize 35
+
+' =========================
+' Actors as classes (optional but OK for alignment)
+' =========================
+class BusinessUser {
+  +userId : UUID
+  +name : String
+  --
+  +askQuestion(questionText: String) : void
+  +openResult(answerId: UUID) : void
+  +vote(answerId: UUID, vote: Vote, comment: String) : void
+}
+
+class Admin {
+  +adminId : UUID
+  +name : String
+  --
+  +refreshCache() : void
+  +viewAuditLogs() : void
+  +configureConnection(connectionInfo: String) : void
+}
+
+class DataAnalyst {
+  +analystId : UUID
+  +name : String
+  --
+  +upload(file: String) : void
+}
+
+' =========================
+' Boundary / UI
+' =========================
+class WebUI {
+  +sessionToken : String
+  --
+  +ask(questionText: String) : void
+  +submit(questionText: String, sourceId: UUID) : void
+  +openResult(answerId: UUID) : void
+  +display(answer: Answer) : void
+  +displayError(message: String) : void
+  +show(tableRows: List<Map>, chartSpec: String, summaryText: String) : void
+  +vote(answerId: UUID, vote: Vote, comment: String) : void
+  +confirmation() : void
+}
+
+class AdminUI {
+  --
+  +refreshCache() : void
+  +viewAuditLogs() : void
+  +addOrUpdateConnection(connectionInfo: String) : void
+  +displayResult(message: String) : void
+}
+
+class UploadUI {
+  --
+  +upload(file: String) : void
+  +confirmation() : void
+  +showError(message: String) : void
+}
+
+' =========================
+' Controllers (Control classes)
+' =========================
+class ChatController {
+  --
+  +submit(questionText: String, sourceId: UUID) : Answer
+}
+
+class ResultsController {
+  --
+  +view(answerId: UUID) : void
+}
+
+class FeedbackController {
+  --
+  +submitVote(answerId: UUID, vote: Vote, comment: String) : void
+}
+
+class TrainingController {
+  --
+  +ingest(file: String, docType: String, sourceId: UUID) : void
+}
+
+class CacheController {
+  --
+  +refresh() : void
+}
+
+class AuditController {
+  --
+  +loadAudit() : List<AuditEvent>
+}
+
+class DataSourceManager {
+  --
+  +configure(connectionInfo: String) : void
+}
+
+' =========================
+' External / Integration classes (must exist because used in sequences)
+' =========================
+class LLMProvider {
+  +providerName : String
+  --
+  +generateSQL(questionText: String, schemaContext: String) : String
+}
+
+class VectorDB {
+  +indexName : String
+  --
+  +search(vectorRef: String) : UUID
+  +upsertEmbedding(vectorRef: String, refId: UUID) : void
+}
+
+class BusinessDatabase {
+  +dbName : String
+  --
+  +run(sqlText: String) : List<Map>
+}
+
+' =========================
+' Domain / Entity classes
+' =========================
+class User {
+  +userId : UUID
+  +name : String
+  +email : String
+  +role : RoleType
+  --
+  +startSession() : ChatSession
+  +submitFeedback(vote: Vote, comment: String) : Feedback
+}
+
+enum RoleType {
+  BUSINESS_USER
+  ADMIN
+}
+
+class ChatSession {
+  +sessionId : UUID
+  +startedAt : DateTime
+  +status : SessionStatus
+  --
+  +addQuestion(text: String) : Question
+  +addAnswer(a: Answer) : void
+  +close() : void
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+}
+
+class Question {
+  +questionId : UUID
+  +rawText : String
+  +normalizedText : String
+  +hashKey : String
+  +askedAt : DateTime
+  --
+  +normalize() : String
+  +computeHashKey() : String
+  +createEmbedding(model: String) : VectorEmbedding
+}
+
+class Answer {
+  +answerId : UUID
+  +createdAt : DateTime
+  +fromCache : Boolean
+  +confidenceScore : float
+  --
+  +attachSQL(sql: SQLQuery) : void
+  +attachDataSet(ds: DataSet) : void
+  +attachChart(chart: Chart) : void
+  +attachSummary(summary: Summary) : void
+  +increaseTrust() : void
+  +markLowConfidence() : void
+}
+
+class SQLQuery {
+  +sqlId : UUID
+  +sqlText : String
+  +isValidated : Boolean
+  --
+  +validate() : boolean
+}
+
+class DataSet {
+  +datasetId : UUID
+  +rowCount : int
+  +generatedAt : DateTime
+  --
+  +getRows() : List<Map>
+}
+
+class Chart {
+  +chartId : UUID
+  +chartType : String
+  --
+  +renderSpec() : String
+}
+
+class Summary {
+  +summaryId : UUID
+  +text : String
+  --
+  +getText() : String
+}
+
+class DataSource {
+  +sourceId : UUID
+  +name : String
+  +dbType : String
+  --
+  +getSchemaContext() : String
+  +openConnection() : DBConnection
+}
+
+class DBConnection {
+  +connectionId : UUID
+  +host : String
+  +databaseName : String
+  --
+  +connect() : boolean
+  +close() : void
+}
+
+class DBSchema {
+  +schemaId : UUID
+  +schemaName : String
+  --
+  +listTables() : List<Table>
+}
+
+class Table {
+  +tableName : String
+  +primaryKey : String
+  --
+  +listColumns() : List<Column>
+}
+
+class Column {
+  +columnName : String
+  +dataType : String
+}
+
+class CacheEntry {
+  +cacheKey : String
+  +createdAt : DateTime
+  +expiresAt : DateTime
+  +hitCount : int
+  --
+  +isExpired() : boolean
+  +incrementHit() : void
+  +refreshExpiry(newExpiry: DateTime) : void
+}
+
+class VectorEmbedding {
+  +embeddingId : UUID
+  +modelName : String
+  +vectorRef : String
+  --
+  +similarityTo(other: VectorEmbedding) : float
+}
+
+class TrainingDocument {
+  +documentId : UUID
+  +fileName : String
+  +docType : String
+  +uploadedAt : DateTime
+  --
+  +extractText() : String
+}
+
+class Feedback {
+  +feedbackId : UUID
+  +vote : Vote
+  +comment : String
+  +createdAt : DateTime
+  --
+  +isApproval() : boolean
+}
+
+enum Vote {
+  APPROVE
+  DISAPPROVE
+}
+
+class AuditEvent {
+  +eventId : UUID
+  +action : String
+  +status : String
+  +latencyMs : long
+  +timestamp : DateTime
+  --
+  +record() : void
+}
+
+' =========================
+' Service classes used implicitly in sequences (for clean mapping)
+' =========================
+class CacheService {
+  --
+  +lookup(hashKey: String) : UUID
+  +store(hashKey: String, answerId: UUID) : void
+  +get(answerRef: UUID) : Answer
+  +invalidate(answerId: UUID) : void
+}
+
+class ReportService {
+  --
+  +chartAndSummary(rows: List<Map>) : Answer
+  +buildChart(data: DataSet) : Chart
+  +buildSummary(data: DataSet) : Summary
+}
+
+class SQLValidator {
+  --
+  +validate(sql: SQLQuery) : boolean
+}
+
+class QueryExecutor {
+  --
+  +execute(sqlText: String, source: DataSource) : DataSet
+}
+
+class EmbeddingService {
+  --
+  +embed(text: String) : VectorEmbedding
+}
+
+' =========================
+' Associations (entities + external + controls)
+' =========================
+
+' Actor -> UI
+BusinessUser --> WebUI
+Admin --> AdminUI
+DataAnalyst --> UploadUI
+
+' UI -> Controllers
+WebUI --> ChatController
+WebUI --> ResultsController
+WebUI --> FeedbackController
+AdminUI --> CacheController
+AdminUI --> AuditController
+AdminUI --> DataSourceManager
+UploadUI --> TrainingController
+
+' Controllers -> Services / Entities / External
+ChatController --> CacheService
+ChatController --> EmbeddingService
+ChatController --> VectorDB
+ChatController --> LLMProvider
+ChatController --> SQLValidator
+ChatController --> QueryExecutor
+ChatController --> ReportService
+ChatController --> AuditEvent
+
+ResultsController --> DataSet
+ResultsController --> Chart
+ResultsController --> Summary
+ResultsController --> AuditEvent
+
+FeedbackController --> Feedback
+FeedbackController --> CacheService
+FeedbackController --> Answer
+FeedbackController --> AuditEvent
+FeedbackController --> User
+
+TrainingController --> TrainingDocument
+TrainingController --> EmbeddingService
+TrainingController --> VectorDB
+TrainingController --> AuditEvent
+
+CacheController --> CacheEntry
+CacheController --> CacheService
+CacheController --> AuditEvent
+
+AuditController --> AuditEvent
+
+DataSourceManager --> DataSource
+DataSourceManager --> DBConnection
+DataSourceManager --> DBSchema
+DataSourceManager --> Table
+DataSourceManager --> Column
+DataSourceManager --> AuditEvent
+
+QueryExecutor --> BusinessDatabase
+QueryExecutor --> DBConnection
+
+' Domain core relationships
+User "1" -- "0..*" ChatSession : starts
+ChatSession "1" *-- "1..*" Question : contains
+ChatSession "1" *-- "0..*" Answer : contains
+
+Question "0..*" --> "1" DataSource : targets
+Answer "0..*" --> "1" DataSource : basedOn
+
+DataSource "1" *-- "1" DBConnection : uses
+DataSource "1" *-- "1" DBSchema : exposes
+DBSchema "1" *-- "1..*" Table : contains
+Table "1" *-- "1..*" Column : has
+
+Answer "1" *-- "1" SQLQuery : hasSQL
+Answer "0..1" *-- "1" DataSet : produces
+Answer "0..1" *-- "1" Chart : shows
+Answer "0..1" *-- "1" Summary : explains
+
+CacheEntry "1" *-- "1" Answer : stores
+Question "0..1" o-- VectorEmbedding : embedding
+VectorEmbedding "0..*" --> "1" DataSource : scopedTo
+
+TrainingDocument "0..*" --> "1" User : uploadedBy
+TrainingDocument "0..*" --> "1" DataSource : relatesTo
+
+Feedback "0..*" --> "1" Answer : about
+Feedback "0..*" --> "1" User : by
+
+ChatSession "1" o-- "0..*" AuditEvent : logs
+@enduml
