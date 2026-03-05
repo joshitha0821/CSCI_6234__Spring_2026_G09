@@ -1,0 +1,24 @@
+@startuml
+title UC7 Easy Sequence - Provide Feedback
+autonumber
+hide footbox
+
+actor User
+boundary UI
+control FeedbackCtrl
+entity FeedbackStore
+entity Cache
+
+User -> UI : vote(answerId, approve/disapprove)
+UI -> FeedbackCtrl : submitVote(answerId, vote)
+
+FeedbackCtrl -> FeedbackStore : save(vote)
+alt approve
+  FeedbackCtrl -> Cache : keep/prioritize(answerId)
+else disapprove
+  FeedbackCtrl -> Cache : invalidate(answerId)
+end
+
+FeedbackCtrl --> UI : ack()
+UI --> User : confirmation
+@enduml

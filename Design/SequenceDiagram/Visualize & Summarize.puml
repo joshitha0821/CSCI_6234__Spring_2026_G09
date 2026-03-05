@@ -1,0 +1,18 @@
+@startuml
+title UC6 Easy Sequence - Visualize & Summarize
+autonumber
+hide footbox
+
+actor User
+boundary UI
+control ReportCtrl
+control ReportSvc
+
+User -> UI : view(dataset)
+UI -> ReportCtrl : buildView(dataset)
+
+ReportCtrl -> ReportSvc : chart+summary(dataset)
+ReportSvc --> ReportCtrl : chart, summary
+ReportCtrl --> UI : response(chart, summary)
+UI --> User : display()
+@enduml

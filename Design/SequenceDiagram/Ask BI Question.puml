@@ -1,0 +1,38 @@
+@startuml
+title UC1 Easy Sequence - Ask BI Question
+autonumber
+hide footbox
+
+actor User
+boundary UI
+control Controller
+entity Cache
+entity VectorDB
+control LLM
+control DB
+control Report
+
+User -> UI : ask(question)
+UI -> Controller : submit(question)
+
+Controller -> Cache : lookup(question)
+alt cache hit
+  Cache --> Controller : answer
+else miss
+  Controller -> VectorDB : search(question)
+  alt semantic hit
+    VectorDB --> Controller : answer
+  else no hit
+    Controller -> LLM : generateSQL(question)
+    LLM --> Controller : sql
+    Controller -> DB : execute(sql)
+    DB --> Controller : data
+    Controller -> Report : chart+summary(data)
+    Report --> Controller : answer
+    Controller -> Cache : store(answer)
+  end
+end
+
+Controller --> UI : return(answer)
+UI --> User : display(answer)
+@enduml

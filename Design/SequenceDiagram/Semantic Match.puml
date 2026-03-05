@@ -1,0 +1,27 @@
+@startuml
+title UC3 Easy Sequence - Semantic Match
+autonumber
+hide footbox
+
+actor User
+boundary UI
+control SemCtrl
+entity VectorDB
+entity Cache
+
+User -> UI : ask(question)
+UI -> SemCtrl : semanticMatch(question)
+
+SemCtrl -> VectorDB : search(question)
+alt match
+  VectorDB --> SemCtrl : ref
+  SemCtrl -> Cache : get(ref)
+  Cache --> SemCtrl : answer
+  SemCtrl --> UI : answer
+else no match
+  VectorDB --> SemCtrl : none
+  SemCtrl --> UI : noMatch
+end
+
+UI --> User : display()
+@enduml

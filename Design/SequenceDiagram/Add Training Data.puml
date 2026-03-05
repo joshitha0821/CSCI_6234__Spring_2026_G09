@@ -1,0 +1,25 @@
+@startuml
+title UC2 Easy Sequence - Add Training Data
+autonumber
+hide footbox
+
+actor Admin
+boundary AdminUI
+control TrainingCtrl
+entity TrainRepo
+entity VectorDB
+
+Admin -> AdminUI : upload(file)
+AdminUI -> TrainingCtrl : ingest(file)
+
+TrainingCtrl -> TrainingCtrl : validate()
+alt valid
+  TrainingCtrl -> TrainRepo : store(file)
+  TrainingCtrl -> VectorDB : index(file)
+  TrainingCtrl --> AdminUI : success()
+else invalid
+  TrainingCtrl --> AdminUI : error()
+end
+
+AdminUI --> Admin : result()
+@enduml

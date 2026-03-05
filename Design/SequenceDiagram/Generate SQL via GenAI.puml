@@ -1,0 +1,28 @@
+@startuml
+title UC4 Easy Sequence - Generate SQL via GenAI
+autonumber
+hide footbox
+
+actor User
+boundary UI
+control SQLCtrl
+control LLM
+control Validator
+
+User -> UI : ask(question)
+UI -> SQLCtrl : requestSQL(question)
+
+SQLCtrl -> LLM : generateSQL(question)
+LLM --> SQLCtrl : sql
+SQLCtrl -> Validator : validate(sql)
+
+alt valid
+  Validator --> SQLCtrl : ok
+  SQLCtrl --> UI : sql
+else invalid
+  Validator --> SQLCtrl : reject
+  SQLCtrl --> UI : error
+end
+
+UI --> User : display()
+@enduml

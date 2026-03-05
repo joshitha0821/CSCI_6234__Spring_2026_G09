@@ -1,0 +1,24 @@
+@startuml
+title UC5 Easy Sequence - Execute SQL
+autonumber
+hide footbox
+
+actor User
+boundary UI
+control ExecCtrl
+control DB
+
+User -> UI : run(sql)
+UI -> ExecCtrl : execute(sql)
+
+ExecCtrl -> DB : run(sql)
+alt success
+  DB --> ExecCtrl : dataset
+  ExecCtrl --> UI : dataset
+else fail
+  DB --> ExecCtrl : error
+  ExecCtrl --> UI : error
+end
+
+UI --> User : display()
+@enduml
