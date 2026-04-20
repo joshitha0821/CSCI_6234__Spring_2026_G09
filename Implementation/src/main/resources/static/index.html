@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Conversational BI Assistant</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <div>
+            <h1>GenAI Conversational BI Assistant</h1>
+            <p>Natural language BI with SQL transparency, cache-aware answers, and interactive exploration.</p>
+        </div>
+        <div class="status-badge" id="statusBadge">Ready</div>
+    </header>
+
+    <section class="metrics-strip">
+        <article class="metric-card">
+            <div class="metric-label">Questions</div>
+            <div id="totalQuestionsStat" class="metric-value">0</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Cache Hit Rate</div>
+            <div id="cacheHitRateStat" class="metric-value">0%</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Avg Latency</div>
+            <div id="avgLatencyStat" class="metric-value">0 ms</div>
+        </article>
+    </section>
+
+    <main class="layout">
+        <section class="chat-panel">
+            <div class="chat-toolbar">
+                <div class="section-title">Conversation Workspace</div>
+                <div class="toolbar-actions">
+                    <button id="jumpLatestBtn" type="button" class="ghost small">Jump to Latest</button>
+                </div>
+            </div>
+            <div class="section-title">Quick Questions</div>
+            <div id="suggestionChips" class="chips"></div>
+            <div class="section-title">Saved Prompts</div>
+            <div id="savedPromptChips" class="chips chips-saved"></div>
+            <div class="section-title">Chat</div>
+            <div id="chatStream" class="chat-stream"></div>
+
+            <form id="askForm" class="ask-form">
+                <label for="questionInput">Question</label>
+                <textarea id="questionInput" rows="3" placeholder="Example: What were last month sales by region?"></textarea>
+                <div class="button-row">
+                    <button type="submit">Ask</button>
+                    <button id="clearChatBtn" type="button" class="ghost">Clear Chat</button>
+                </div>
+                <div class="composer-meta">
+                    <small id="charCount" class="hint">0 chars</small>
+                    <small class="hint">Press <kbd>/</kbd> to focus input</small>
+                </div>
+                <small class="hint">Tip: press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send quickly.</small>
+            </form>
+        </section>
+
+        <aside class="side-panel">
+            <div class="side-tabs">
+                <button type="button" class="side-tab active" data-tab="session">Session</button>
+                <button type="button" class="side-tab" data-tab="training">Training</button>
+                <button type="button" class="side-tab" data-tab="system">System</button>
+            </div>
+
+            <section class="card pane active" data-pane="session">
+                <div class="section-title">Recent History</div>
+                <button id="refreshHistoryBtn" class="ghost">Refresh History</button>
+                <input id="historyFilterInput" type="text" class="filter-input" placeholder="Filter history...">
+                <div id="historyList" class="list-box"></div>
+            </section>
+
+            <section class="card pane" data-pane="training">
+                <div class="section-title">Training Data</div>
+                <form id="docUploadForm" class="stack">
+                    <label for="docInput">Upload Document</label>
+                    <input id="docInput" type="file" required>
+                    <button type="submit">Upload</button>
+                </form>
+                <form id="exampleForm" class="stack">
+                    <label for="exampleQuestion">Add Question-SQL Example</label>
+                    <input id="exampleQuestion" type="text" placeholder="Question pattern">
+                    <textarea id="exampleSql" rows="3" placeholder="SELECT ..."></textarea>
+                    <button type="submit">Add Example</button>
+                </form>
+                <button id="refreshDocsBtn" class="ghost">Refresh Documents</button>
+                <div id="docsList" class="list-box"></div>
+            </section>
+
+            <section class="card pane" data-pane="system">
+                <div class="section-title">Database Connection</div>
+                <div class="stack">
+                    <label for="connectionSelect">Active Connection</label>
+                    <select id="connectionSelect"></select>
+                    <div class="button-row">
+                        <button id="refreshConnectionsBtn" type="button" class="ghost">Refresh Connections</button>
+                        <button id="viewSchemaBtn" type="button" class="ghost">View Schema</button>
+                    </div>
+                </div>
+                <details class="trail">
+                    <summary>Add External Connection</summary>
+                    <form id="newConnectionForm" class="stack" style="margin-top:0.6rem;">
+                        <input id="newConnName" type="text" placeholder="Connection name (e.g., Postgres Prod)">
+                        <input id="newConnUrl" type="text" placeholder="JDBC URL (e.g., jdbc:postgresql://localhost:5432/mydb)">
+                        <input id="newConnUser" type="text" placeholder="Username">
+                        <input id="newConnPassword" type="password" placeholder="Password">
+                        <input id="newConnDriver" type="text" placeholder="Driver class (optional)">
+                        <button type="submit">Add Connection</button>
+                    </form>
+                </details>
+                <div id="schemaPreview" class="list-box"></div>
+            </section>
+
+            <section class="card pane" data-pane="system">
+                <div class="section-title">Cache Controls</div>
+                <div class="button-row">
+                    <button id="cacheRefreshBtn" class="ghost">Refresh Stale</button>
+                    <button id="cacheClearBtn" class="danger">Clear All</button>
+                </div>
+            </section>
+
+            <section class="card pane" data-pane="system">
+                <div class="section-title">Audit Log</div>
+                <button id="refreshAuditBtn" class="ghost">Refresh Audit</button>
+                <input id="auditFilterInput" type="text" class="filter-input" placeholder="Filter logs...">
+                <div id="auditList" class="list-box"></div>
+            </section>
+        </aside>
+    </main>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+<script src="/app.js"></script>
+</body>
+</html>
