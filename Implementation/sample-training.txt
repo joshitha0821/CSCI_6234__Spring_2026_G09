@@ -1,1 +1,0 @@
-Business glossary: revenue means sum(amount).
